@@ -6,12 +6,10 @@ use Blog\Controller\BlogController;
 use Blog\Controller\Factory\BlogControllerFactory;
 use Blog\Controller\Factory\PostControllerFactory;
 use Blog\Controller\PostController;
+use Blog\Form\CommentForm;
+use Blog\Form\Factory\CommentFormFactory;
 use Blog\Form\Factory\PostFormFactory;
 use Blog\Form\PostForm;
-use Blog\Model\Factory\CommentTableFactory;
-use Blog\Model\Factory\CommentTableGatewayFactory;
-use Blog\Model\Factory\PostTableFactory;
-use Blog\Model\Factory\PostTableGatewayFactory;
 use Zend\ModuleManager\Feature\ConfigProviderInterface;
 use Zend\ModuleManager\Feature\ControllerProviderInterface;
 use Zend\ModuleManager\Feature\ServiceProviderInterface;
@@ -28,11 +26,8 @@ class Module implements ConfigProviderInterface, ServiceProviderInterface, Contr
     {
         return [
             'factories' => [
-                Model\PostTable::class => PostTableFactory::class,
-                Model\PostTableGateway::class => PostTableGatewayFactory::class,
                 PostForm::class => PostFormFactory::class,
-                Model\CommentTable::class => CommentTableFactory::class,
-                Model\CommentTableGateway::class => CommentTableGatewayFactory::class,
+                CommentForm::class => CommentFormFactory::class
             ]
         ];
     }

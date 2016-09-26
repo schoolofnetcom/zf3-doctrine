@@ -6,86 +6,87 @@ namespace Blog\Controller;
 
 use Blog\Form\CommentForm;
 use Blog\Model\Comment;
-use Blog\Model\CommentTable;
-use Blog\Model\PostTable;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityRepository;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 
 class PostController extends AbstractActionController
 {
     /**
-     * @var PostTable
+     * @var EntityManager
      */
-    private $table;
+    private $entityManager;
     /**
-     * @var CommentTable
+     * @var EntityRepository
      */
-    private $commentTable;
+    private $postRepository;
+    /**
+     * @var EntityRepository
+     */
+    private $commentRepository;
+    /**
+     * @var CommentForm
+     */
+    private $commentForm;
 
-    public function __construct(PostTable $table, CommentTable $commentTable)
-    {
-        $this->table = $table;
-        $this->commentTable = $commentTable;
+    public function __construct(
+        EntityManager $entityManager,
+        EntityRepository $postRepository,
+        EntityRepository $commentRepository,
+        CommentForm $commentForm
+    ) {
+        $this->entityManager = $entityManager;
+        $this->postRepository = $postRepository;
+        $this->commentRepository = $commentRepository;
+        $this->commentForm = $commentForm;
     }
 
     public function indexAction()
     {
-        $postTable = $this->table;
-
         return new ViewModel([
-            'posts' => $postTable->fetchAll()
+            'posts' => $this->postRepository->findAll()
         ]);
     }
 
     public function showAction()
     {
         $id = (int)$this->params()->fromRoute('id', 0);
-        $commentForm = new CommentForm();
-        if (!$id) {
-            return $this->redirect()->toRoute('post');
-        }
 
-        try {
-            $post = $this->table->find($id);
-        } catch (\Exception $e) {
-            return $this->redirect()->toRoute('post');
+        if (!$id || !($post = $this->postRepository->find($id))) {
+            return $this->redirect()->toRoute('site-post');
         }
 
         return new ViewModel([
             'post' => $post,
-            'commentForm' => $commentForm
+            'commentForm' => $this->commentForm
         ]);
     }
 
     public function addCommentAction()
     {
-        $id = (int)$this->params()->fromRoute('id', 0);
-
-        if (!$id) {
-            return $this->redirect()->toRoute('site-post');
-        }
         $request = $this->getRequest();
         if (!$request->isPost()) {
             return $this->redirect()->toRoute('site-post');
         } else {
-            try {
-                $post = $this->table->find($id);
-            } catch (\Exception $e) {
+            $id = (int)$this->params()->fromRoute('id', 0);
+
+            if (!$id || !($post = $this->postRepository->find($id))) {
                 return $this->redirect()->toRoute('site-post');
             }
 
-            $commentForm = new CommentForm();
+            $commentForm = $this->commentForm;
             $commentForm->setData($request->getPost());
 
             if (!$commentForm->isValid()) {
-                return $this->redirect()->toRoute('site-post', ['action' => 'show', 'id' => $post->id]);
+                return $this->redirect()->toRoute('site-post', ['action' => 'show', 'id' => $post->getId()]);
             }
-            $data = $commentForm->getData();
-            $data['post_id'] = $post->id;
-            $comment = new Comment();
-            $comment->exchangeArray($data);
-            $this->commentTable->save($comment);
-            return $this->redirect()->toRoute('site-post', ['action' => 'show', 'id' => $post->id]);
+            $comment = $commentForm->getData();
+            $comment->setPost($post);
+            $this->entityManager->persist($comment);
+            $this->entityManager->flush();
+
+            return $this->redirect()->toRoute('site-post', ['action' => 'show', 'id' => $post->getId()]);
         }
     }
 

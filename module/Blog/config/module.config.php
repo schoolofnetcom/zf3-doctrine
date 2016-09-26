@@ -2,6 +2,7 @@
 
 namespace Blog;
 
+use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
 use Zend\Router\Http\Literal;
 use Zend\ServiceManager\Factory\InvokableFactory;
 
@@ -57,6 +58,25 @@ return [
     'view_manager' => [
         'template_path_stack' => [
             'blog' => __DIR__ . "/../view"
+        ]
+    ],
+    'doctrine' => [
+        'driver' => [
+            'Blog_driver' => [
+                'class' => AnnotationDriver::class,
+                'cache' => 'array',
+                'paths' => [
+                    __DIR__ . '/../src/Entity'
+                ]
+            ],
+            'orm_default' => [
+                'drivers' => [
+                    'Blog\Entity' => 'Blog_driver'
+                ]
+            ]
+        ],
+        'fixtures' => [
+            'BlogFixture' => __DIR__ . '/../src/Fixture'
         ]
     ]
 ];
